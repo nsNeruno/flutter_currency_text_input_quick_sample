@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import 'num_utils.dart';
+// TODO: Replace with correct import to where AmountInputFormatterSet is declared
+import 'num_ext.dart';
 
 class AmountInputFormatter extends TextInputFormatter {
 
