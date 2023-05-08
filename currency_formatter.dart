@@ -22,22 +22,25 @@ class AmountInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue, TextEditingValue newValue,
   ) {
     var newText = newValue.text;
-    final NumberSymbols? symbols = numberFormatSymbols[locale];
-    if (symbols == null) {
-      throw ArgumentError.value(locale, 'Locale', 'Not a valid I18N Locale',);
-    }
-    final decimalSeparator = symbols.DECIMAL_SEP;
-    final groupSeparator = symbols.GROUP_SEP;
-    final endsWithSymbol = newText.isNotEmpty
-        ? newText[newText.length - 1] == decimalSeparator
-        : false;
     final selectionDelta = max(
       0,
       newText.length - newValue.selection.baseOffset,
     );
 
+    bool endsWithSymbol = false;
+    String decimalSeparator = '';
+
     num? parsed;
     if (includeDecimals) {
+      final NumberSymbols? symbols = numberFormatSymbols[locale];
+      if (symbols == null) {
+        throw ArgumentError.value(locale, 'Locale', 'Not a valid I18N Locale',);
+      }
+      decimalSeparator = symbols.DECIMAL_SEP;
+      final groupSeparator = symbols.GROUP_SEP;
+      endsWithSymbol = newText.isNotEmpty
+          ? newText[newText.length - 1] == decimalSeparator
+          : false;
       parsed = num.tryParse(
         newText.replaceAllMapped(
           RegExp('[$groupSeparator$decimalSeparator]',),
@@ -69,7 +72,7 @@ class AmountInputFormatter extends TextInputFormatter {
     }
 
     newText = endsWithSymbol ? '$newText$decimalSeparator' : newText;
-    int newOffset = newText.length - selectionDelta;
+    final newOffset = newText.length - selectionDelta;
 
     return newValue.copyWith(
       text: newText,
