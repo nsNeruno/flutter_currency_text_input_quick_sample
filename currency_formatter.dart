@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/number_symbols.dart';
+import 'package:intl/number_symbols_data.dart';
 
 // TODO: Replace with correct import to where AmountInputFormatterSet is declared
 import 'num_ext.dart';
@@ -20,32 +22,53 @@ class AmountInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue, TextEditingValue newValue,
   ) {
     var newText = newValue.text;
+    final NumberSymbols? symbols = numberFormatSymbols[locale];
+    if (symbols == null) {
+      throw ArgumentError.value(locale, 'Locale', 'Not a valid I18N Locale',);
+    }
+    final decimalSeparator = symbols.DECIMAL_SEP;
+    final groupSeparator = symbols.GROUP_SEP;
     final endsWithSymbol = newText.isNotEmpty
-        ? ['.', ',',].contains(newText[newText.length - 1],)
+        ? newText[newText.length - 1] == decimalSeparator
         : false;
     final selectionDelta = max(
       0,
       newText.length - newValue.selection.baseOffset,
     );
-    num? parsed = num.tryParse(
-      includeDecimals ? newText : newText.replaceAll(r"\D", "",),
-    );
+
+    num? parsed;
+    if (includeDecimals) {
+      parsed = num.tryParse(
+        newText.replaceAllMapped(
+          RegExp('[$groupSeparator$decimalSeparator]',),
+          (match) {
+            if (match.group(0,) == decimalSeparator) {
+              return '.';
+            }
+            return '';
+          },
+        ),
+      );
+    } else {
+      parsed = num.tryParse(
+        newText.replaceAll(RegExp(r"\D",), "",),
+      );
+    }
+
     if (parsed != null) {
       newText = NumberFormat.currency(
-        locale: 'id',
+        locale: locale,
         name: '',
         symbol: '',
         decimalDigits: includeDecimals
             ? max(min(decimalPlaces, parsed.decimalPlaces,), 0,)
             : 0,
-      ).format(parsed,).replaceAll(
-        RegExp(r"\D",), '.',
-      );
+      ).format(parsed,);
     } else {
       newText = '';
     }
 
-    newText = endsWithSymbol ? '$newText.' : newText;
+    newText = endsWithSymbol ? '$newText$decimalSeparator' : newText;
     int newOffset = newText.length - selectionDelta;
 
     return newValue.copyWith(
@@ -58,7 +81,7 @@ class AmountInputFormatter extends TextInputFormatter {
 
   final bool includeDecimals;
   final int decimalPlaces;
-  final String? locale;
+  final String locale;
 }
 
 class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
@@ -67,7 +90,7 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
     int maxLength = 15,
     bool includeDecimals = false,
     int decimalPlaces = 2,
-    String? locale = 'id',
+    String locale = 'id',
   }): _internal = [
     FilteringTextInputFormatter.allow(
       includeDecimals
@@ -75,24 +98,26 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
           : RegExp(r"\d",),
     ),
     if (includeDecimals)
-      ...[
-        FilteringTextInputFormatter.deny(
-          RegExp(r"(?<=\d+[.,]\d*)[.,]",),
-        ),
-        TextInputFormatter.withFunction(
-          (oldValue, newValue) => newValue.copyWith(
-            text: newValue.text.replaceAll(
-              ',', '.',
-            ),
-          ),
-        ),
-      ],
+      () {
+        final NumberSymbols? symbols = numberFormatSymbols[locale];
+        if (symbols == null) {
+          throw ArgumentError.value(
+            locale, 'Locale', 'Not a valid I18N Locale',
+          );
+        }
+        final decimalSeparator = symbols.DECIMAL_SEP;
+        final exp = "(?<=\\d+\\$decimalSeparator\\d*)\\$decimalSeparator";
+        return FilteringTextInputFormatter.deny(
+          RegExp(exp,),
+        );
+      }(),
     LengthLimitingTextInputFormatter(
       maxLength,
       maxLengthEnforcement: MaxLengthEnforcement.enforced,
     ),
     AmountInputFormatter(
       includeDecimals: includeDecimals,
+      locale: locale,
     ),
   ];
 
