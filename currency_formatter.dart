@@ -12,6 +12,7 @@ class AmountInputFormatter extends TextInputFormatter {
   AmountInputFormatter({
     this.includeDecimals = false,
     this.decimalPlaces = 2,
+    this.locale = 'id',
   });
 
   @override
@@ -57,6 +58,7 @@ class AmountInputFormatter extends TextInputFormatter {
 
   final bool includeDecimals;
   final int decimalPlaces;
+  final String? locale;
 }
 
 class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
@@ -65,6 +67,7 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
     int maxLength = 15,
     bool includeDecimals = false,
     int decimalPlaces = 2,
+    String? locale = 'id',
   }): _internal = [
     FilteringTextInputFormatter.allow(
       includeDecimals
@@ -72,9 +75,18 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
           : RegExp(r"\d",),
     ),
     if (includeDecimals)
-      FilteringTextInputFormatter.deny(
-        RegExp(r"(?<=\d+[.,]\d*)[.,]",),
-      ),
+      ...[
+        FilteringTextInputFormatter.deny(
+          RegExp(r"(?<=\d+[.,]\d*)[.,]",),
+        ),
+        TextInputFormatter.withFunction(
+          (oldValue, newValue) => newValue.copyWith(
+            text: newValue.text.replaceAll(
+              ',', '.',
+            ),
+          ),
+        ),
+      ],
     LengthLimitingTextInputFormatter(
       maxLength,
       maxLengthEnforcement: MaxLengthEnforcement.enforced,
