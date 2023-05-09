@@ -15,6 +15,7 @@ class AmountInputFormatter extends TextInputFormatter {
     this.includeDecimals = false,
     this.decimalPlaces = 2,
     this.locale = 'id',
+    this.maxAmount,
   });
 
   @override
@@ -27,8 +28,8 @@ class AmountInputFormatter extends TextInputFormatter {
       newText.length - newValue.selection.baseOffset,
     );
 
-    bool endsWithSymbol = false;
-    String decimalSeparator = '';
+    var endsWithSymbol = false;
+    var decimalSeparator = '';
 
     num? parsed;
     if (includeDecimals) {
@@ -59,6 +60,11 @@ class AmountInputFormatter extends TextInputFormatter {
     }
 
     if (parsed != null) {
+
+      if (maxAmount != null && parsed > maxAmount!) {
+        return oldValue;
+      }
+
       newText = NumberFormat.currency(
         locale: locale,
         name: '',
@@ -85,6 +91,7 @@ class AmountInputFormatter extends TextInputFormatter {
   final bool includeDecimals;
   final int decimalPlaces;
   final String locale;
+  final num? maxAmount;
 }
 
 class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
@@ -94,6 +101,7 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
     bool includeDecimals = false,
     int decimalPlaces = 2,
     String locale = 'id',
+    num? maxAmount,
   }): _internal = [
     FilteringTextInputFormatter.allow(
       includeDecimals
@@ -120,7 +128,9 @@ class AmountInputFormatterSet extends ListBase<TextInputFormatter> {
     ),
     AmountInputFormatter(
       includeDecimals: includeDecimals,
+      decimalPlaces: decimalPlaces,
       locale: locale,
+      maxAmount: maxAmount,
     ),
   ];
 
