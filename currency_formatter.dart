@@ -73,7 +73,6 @@ class AmountInputFormatter extends TextInputFormatter {
         return oldValue;
       }
 
-      debugLog('Formatting $parsed', name: '$runtimeType',);
       newText = NumberFormat.currency(
         locale: locale,
         name: '',
