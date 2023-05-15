@@ -61,10 +61,19 @@ class AmountInputFormatter extends TextInputFormatter {
 
     if (parsed != null) {
 
+      if (includeDecimals) {
+        final s = pow(10, decimalPlaces,);
+        final dirt = (parsed * s) % 1;
+        if (dirt > 0) {
+          parsed = (parsed * s).floorToDouble() / s;
+        }
+      }
+
       if (maxAmount != null && parsed > maxAmount!) {
         return oldValue;
       }
 
+      debugLog('Formatting $parsed', name: '$runtimeType',);
       newText = NumberFormat.currency(
         locale: locale,
         name: '',
